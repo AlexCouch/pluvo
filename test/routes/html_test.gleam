@@ -1,4 +1,4 @@
-import context.{type Context}
+import pluvo/context.{type Context}
 import gleam/http/response.{type Response}
 import mist.{type ResponseData}
 

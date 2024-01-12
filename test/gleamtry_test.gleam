@@ -1,5 +1,5 @@
 import pluvo
-import router
+import pluvo/router
 import routes/index
 import routes/rand
 import routes/html_test

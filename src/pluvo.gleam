@@ -3,9 +3,9 @@ import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 import gleam/bytes_builder
 import mist.{type Connection, type ResponseData}
-import router.{type Router}
+import pluvo/router.{type Router}
 import gleam/option.{Some, None}
-import context
+import pluvo/context
 
 pub type Pluvo{
     Pluvo(router: Router)

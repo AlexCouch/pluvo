@@ -4,7 +4,7 @@ import gleam/option.{type Option, None}
 import gleam/string
 import gleam/http/response.{type Response}
 import mist.{type ResponseData}
-import context.{type Context}
+import pluvo/context.{type Context}
 import gleam/io
 
 pub type RouteHandler = fn(Context) -> Response(ResponseData)
@@ -25,16 +25,6 @@ pub type RouteMethod{
     RouteMethod(kind: MethodKind, path: String, param_names: List(String), handler: RouteHandler)
 }
 
-// router 
-// |> route.get("/", index.view)
-// |> route.get("/login", login.view)
-// |> route.post("/login", login.handler)
-// |> route.get("/register", register.view)
-// |> route.post("/register", register.handler)
-// |> route.get(/user/:id", user.view)
-//  Node("/")
-//  Node("/user")
-//  Node("/user", param: Node(":id"))
 pub type Node{
     Node(
         prefix: String,
@@ -49,7 +39,6 @@ pub fn new_router() -> Router{
 }
 
 fn create_nodes(paths: List(String), nodes: List(Node)) -> List(Node){
-    io.debug(paths)
     case paths{
         [head, ..tail] -> {
             let nodes = [Node(head, [], None, False), ..nodes]
@@ -107,13 +96,12 @@ fn add_route(router: Router, path: String, method: RouteMethod) -> Router{
 }
 
 pub fn add(router: Router, path: String, method: RouteMethod) -> Router{
-    let router = path 
+    path 
     |> string.split(on: "/")
     |> get_all_paths("", [])
     |> create_nodes([])
     |> append(router)
     |> add_route(path, method)
-    io.debug(router)
     router
 }
 

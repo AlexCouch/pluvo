@@ -18,7 +18,10 @@ above commands will help you get started
 ## Example
 In your main function, you must create a new pluvo object. This will store things like your 
 routes. Piping the object into `pluvo.router()` will allow you to register new routes.
-```rust 
+```gleam 
+import routes 
+import pluvo
+
 pub fn main(){
     let pluv = pluvo.new()
 
