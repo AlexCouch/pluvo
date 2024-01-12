@@ -12,11 +12,55 @@ gleam shell # Run an Erlang shell
 ```
 
 ## Installation
+This is not yet usable as a dependency, however, cloning the project and running the
+above commands will help you get started
 
-If available on Hex this package can be added to your Gleam project:
+## Example
+In your main function, you must create a new pluvo object. This will store things like your 
+routes. Piping the object into `pluvo.router()` will allow you to register new routes.
+```rust 
+pub fn main(){
+    let pluv = pluvo.new()
 
-```sh
-gleam add gleamtry
+    let routes = pluvo.router
+    |> router.get("/home", home.handler)
+
+    pluv 
+    |> pluvo.add_router(routes)
+    |> pluvo.start(3000)
+}
 ```
 
-and its documentation can be found at <https://hexdocs.pm/gleamtry>.
+## Project Structure
+Your project should be structured like this 
+```
+root -
+    |- src
+        |- routes 
+            |- ...
+        |- main.gleam
+```
+In your src directory, create a folder called `routes`. Each file in this directory 
+should be for a single route. 
+
+## Routes 
+A route is a file which has either a `view` or a `handler`. Naming convention is 
+not enforced, however, you can think of it like this:
+
+A `view` simply returns a view or an html file.
+A `handler` simply does something such as return an API result, fetch some data from a database, etc.
+
+```rust 
+//routes/index.gleam
+pub fn view(ctx: Context) -> Response(ResponseData){
+    ctx 
+    |> context.html("/static/views/index.html")
+}
+
+pub fn handle(ctx: Context) -> Respone(ResponseData){
+    //Get data from database
+    //Convert data to JSON string
+    ctx 
+    |> context.text(json_data)
+}
+```
