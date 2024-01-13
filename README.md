@@ -53,7 +53,7 @@ not enforced, however, you can think of it like this:
 A `view` simply returns a view or an html file.
 A `handler` simply does something such as return an API result, fetch some data from a database, etc.
 
-```rust 
+```gleam 
 //routes/index.gleam
 pub fn view(ctx: Context) -> Response(ResponseData){
     ctx 
@@ -75,6 +75,7 @@ Groups are useful for giving a group of routes a shared set of properties, such 
 import pluvo
 import pluvo/router 
 import pluvo/group
+import routes/admin/dashboard
 
 pub fn main(){
     let pluv = pluvo.new()
@@ -82,8 +83,12 @@ pub fn main(){
     let routes = pluvo.router
     |> router.get("/home", home.handler)
 
+    let admin = pluvo.group("/admin")
+    |> group.get("/dashboard", dashboard.handler)
+
     pluv 
     |> pluvo.add_router(routes)
+    |> plugo.add_group(admin)
     |> pluvo.start(3000)
 }
 ```
