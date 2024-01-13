@@ -1,7 +1,11 @@
-# gleamtry
+# Pluvo
 
 [![Package Version](https://img.shields.io/hexpm/v/gleamtry)](https://hex.pm/packages/gleamtry)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/gleamtry/)
+
+Pluvo is a high-level, powerful web framework in pure Gleam, built on top of mist.
+It provides easy routing, configuration, and response building. It will provide 
+middleware, header building, static resources, cookies, caches, and much more!
 
 ## Quick start
 
