@@ -1,6 +1,6 @@
 import gleam/dict.{type Dict}
 import gleam/list
-import gleam/option.{type Option, None}
+import gleam/option.{type Option, None, Some}
 import gleam/string
 import gleam/http/response.{type Response}
 import mist.{type ResponseData}
@@ -102,7 +102,6 @@ pub fn add(router: Router, path: String, method: RouteMethod) -> Router{
     |> create_nodes([])
     |> append(router)
     |> add_route(path, method)
-    router
 }
 
 pub fn get(router: Router, path: String, handler: RouteHandler) -> Router{
@@ -110,8 +109,50 @@ pub fn get(router: Router, path: String, handler: RouteHandler) -> Router{
     add(router, path, method)
 }
 
+fn find_lcp(paths: List(String), path: String, lcp: String) -> Option(String){
+    case paths{
+        [head, ..tail] ->{
+            case string.starts_with(path, head){
+                True -> {
+                    //We need to change the lcp to the head in the event that 
+                    // the length of the head is longer than the current lcp
+                    let lcp = case string.length(head) > string.length(lcp){
+                        True -> head
+                        False -> lcp
+                    }
+                    find_lcp(tail, path, lcp)
+                }
+                //Otherwise, continue finding the lcp with nothing changed
+                False -> find_lcp(tail, path, lcp)
+            }
+        }
+        _ -> case lcp{
+            ""  -> None
+            _   -> Some(lcp)
+        }
+    }
+}
+
+fn get_lcp(router: Router, path: String) -> Option(Route){
+    let Router(routes: routes, ..) = router
+    let paths = dict.keys(routes)
+    find_lcp(paths, path, "")
+    |> option.map(fn(lcp) {
+        routes 
+        |> dict.get(lcp)
+        |> option.from_result
+    })
+    |> option.flatten
+}
+
 pub fn get_route(router: Router, path: String) -> Option(Route){
-    io.println("Getting route " <> path)
-    dict.get(router.routes, path)
-    |> option.from_result
+    //Get the longest common part between the request path and the registered paths
+    let lcp = get_lcp(router, path)
+    io.debug(lcp)
+}
+
+pub fn join(router: Router, other: Router) -> Router{
+    let Router(nodes, routes) = router
+    let Router(other_nodes, other_routes) = other
+    Router(list.append(nodes, other_nodes), dict.merge(routes, other_routes))
 }

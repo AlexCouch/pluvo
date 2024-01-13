@@ -6,6 +6,7 @@ import mist.{type Connection, type ResponseData}
 import pluvo/router.{type Router}
 import gleam/option.{Some, None}
 import pluvo/context
+import pluvo/group.{type Group, Group}
 
 pub type Pluvo{
     Pluvo(router: Router)
@@ -19,9 +20,17 @@ pub fn router(pluvo: Pluvo) -> Router{
     pluvo.router
 }
 
+pub fn group(pluvo: Pluvo, prefix: String) -> Group{
+    Group(prefix, pluvo.router)
+}
+
+pub fn add_group(pluvo: Pluvo, group: group.Group) -> Pluvo{
+    Pluvo(router.join(pluvo.router, group.router))
+}
+
 //Note: pluvo is passed in for api design and future proofing
-pub fn add_router(_pluvo: Pluvo, router: Router) -> Pluvo{
-    Pluvo(router)
+pub fn add_router(pluvo: Pluvo, router: Router) -> Pluvo{
+    Pluvo(router.join(pluvo.router, router))
 }
 
 
@@ -37,7 +46,7 @@ pub fn start(pluvo: Pluvo, port: Int){
             let ctx = context.new(req)
             case router.get_route(pluvo.router, req.path){
                 Some(route) -> route.method.handler(ctx)
-                None -> context.error(ctx, "Could not find route " <> req.path)
+                None -> not_found
             }
         }
         |> mist.new 

@@ -16,6 +16,7 @@ mist = "~> 0.15"
 gleam_erlang = "~> 0.24"
 gleam_otp = "~> 0.9"
 simplifile = "~> 1.2"
+juno = "~> 1.2"
 
 [dev-dependencies]
 gleeunit = "~> 1.0"

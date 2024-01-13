@@ -67,3 +67,23 @@ pub fn handle(ctx: Context) -> Respone(ResponseData){
     |> context.text(json_data)
 }
 ```
+
+## Groups
+Groups are useful for giving a group of routes a shared set of properties, such as a prefix, authentication, middleware, etc.
+
+```gleam 
+import pluvo
+import pluvo/router 
+import pluvo/group
+
+pub fn main(){
+    let pluv = pluvo.new()
+
+    let routes = pluvo.router
+    |> router.get("/home", home.handler)
+
+    pluv 
+    |> pluvo.add_router(routes)
+    |> pluvo.start(3000)
+}
+```
