@@ -28,11 +28,9 @@ pub fn add_group(pluvo: Pluvo, group: group.Group) -> Pluvo{
     Pluvo(router.join(pluvo.router, group.router))
 }
 
-//Note: pluvo is passed in for api design and future proofing
 pub fn add_router(pluvo: Pluvo, router: Router) -> Pluvo{
     Pluvo(router.join(pluvo.router, router))
 }
-
 
 pub fn start(pluvo: Pluvo, port: Int){
     let selector = process.new_selector()

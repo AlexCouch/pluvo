@@ -4,5 +4,5 @@ import mist.{type ResponseData}
 
 pub fn view(ctx: Context) -> Response(ResponseData){
     ctx 
-    |> context.html("static/views/index.html")
+    |> context.text("User id here!")
 }
