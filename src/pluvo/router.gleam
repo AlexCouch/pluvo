@@ -1,12 +1,10 @@
 import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/string
 import gleam/http/response.{type Response}
 import mist.{type ResponseData}
 import pluvo/context.{type Context}
-import gleam/io
-import pluvo/path.{type Path}
+import pluvo/path.{type Path, Segment, Parameter}
 
 pub type RouteHandler = fn(Context) -> Response(ResponseData)
 pub type Route{
@@ -16,6 +14,10 @@ pub type Route{
 //// Provides an interface for creating and registering custom routes
 pub type Router{
     Router(tree: List(Node), routes: Dict(Path, Route))
+}
+
+pub type RouteContext{
+    RouteContext(route: Route, ctx: Context)
 }
 
 pub type MethodKind{
@@ -120,15 +122,39 @@ fn get_lcp(path: Path, nodes: List(Node)) -> Option(Path){
     }
 }
 
-pub fn get_route(router: Router, path: String) -> Option(Route){
-    path 
+pub type RouteParameter{
+    Parameter(name: String, value: String)
+}
+
+pub fn get_param(route: Route, path: Path) -> Option(RouteParameter){
+    case path.is_parameter(route.path){
+        False -> None
+        True -> case path.last(path), path.last(route.path){
+            Some(Segment(value)), Some(path.Parameter(name)) -> Some(Parameter(name, value))
+            _, _ -> None
+        }
+    }
+}
+
+pub fn get_route(ctx: Context, router: Router, path: String) -> Option(RouteContext){
+    let path = path 
     |> path.from_string
+
+    let route = path
     |> get_lcp(router.tree)
     |> option.map(fn(path){
         dict.get(router.routes, path)
         |> option.from_result
     })
     |> option.flatten
+
+    use route <- option.then(route)
+    use param <- option.then(get_param(route, path))
+    let ctx = ctx 
+    |> context.add_param(param.name, param.value)
+    
+    RouteContext(route, ctx)
+    |> Some
 }
 
 pub fn join(router: Router, other: Router) -> Router{

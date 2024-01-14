@@ -4,9 +4,15 @@ import gleam/http/response.{type Response, Response}
 import mist.{type Connection, type ResponseData}
 import gleam/bytes_builder
 import simplifile
+import gleam/dict.{type Dict}
+import gleam/option.{type Option, Some, None}
 
 pub type Context{
-    Context(request: Request(Connection), resp: Response(ResponseData))
+    Context(
+        request: Request(Connection), 
+        resp: Response(ResponseData),
+        params: Dict(String, String),
+    )
 }
 
 fn default_response(){
@@ -15,7 +21,7 @@ fn default_response(){
 }
 
 pub fn new(request: Request(Connection)){
-    Context(request, default_response())
+    Context(request, default_response(), dict.new())
 }
 
 pub fn set_status(ctx: Context, status: Int) -> Response(ResponseData){
@@ -53,4 +59,30 @@ pub fn get_method(ctx: Context) -> String{
 
 pub fn is_method(ctx: Context, method: String) -> Bool{
     get_method(ctx) == method
+}
+
+pub fn get_param(ctx: Context, key: String) -> Option(String){
+    dict.get(ctx.params, key)
+    |> option.from_result
+}
+
+pub fn add_param(ctx: Context, key: String, value: String) -> Context{
+    let Context(request: req, resp: resp, params: params) = ctx
+    Context(req, resp, dict.insert(params, key, value))
+}
+
+///Apply a callback onto a result object if it exists, returning data to send back to the client
+///This allows route handlers to simplify the calls of various get functions such as get_parameter
+///and replace the case expression with a use statement to reduce code.
+pub fn then(result: Option(a), fun: fn(a)->Response(ResponseData)) -> Response(ResponseData){
+    case result{
+        Some(dat) -> {
+            fun(dat)
+        }
+        None -> {
+            let body = mist.Bytes(bytes_builder.from_string("Something went wrong!"))
+            response.new(404)
+            |> response.set_body(body)
+        }
+   } 
 }
