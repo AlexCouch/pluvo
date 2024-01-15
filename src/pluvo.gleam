@@ -3,16 +3,18 @@ import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 import gleam/bytes_builder
 import mist.{type Connection, type ResponseData}
-import pluvo/router.{type Router}
+import pluvo/router.{type Router, Router}
+import gleam/dict
 import gleam/option.{Some, None}
 import pluvo/context
+import pluvo/middleware.{type Middleware}
 
 pub type Pluvo{
     Pluvo(router: Router)
 }
 
 pub fn new() -> Pluvo{
-    Pluvo(router.new())
+    Pluvo(Router(prefix: "", tree: [], routes: dict.new(), middleware: []))
 }
 
 pub fn router(pluvo: Pluvo) -> Router{
@@ -21,6 +23,12 @@ pub fn router(pluvo: Pluvo) -> Router{
 
 pub fn add_router(pluvo: Pluvo, router: Router) -> Pluvo{
     Pluvo(router.join(pluvo.router, router))
+}
+
+pub fn enable(pluvo: Pluvo, middleware: Middleware) -> Pluvo{
+    pluvo.router 
+    |> router.enable(middleware)
+    |> Pluvo
 }
 
 pub fn start(pluvo: Pluvo, port: Int){

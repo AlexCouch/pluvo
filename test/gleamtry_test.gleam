@@ -14,6 +14,7 @@ import pluvo/context.{type Context}
 import gleam/io
 
 pub fn my_middleware(route: Route, ctx: Context) -> Response{
+    io.println("Hello, from my_middleware!")
     ctx 
     |> context.add_param("count", "5")
     |> route.method.handler
@@ -21,18 +22,18 @@ pub fn my_middleware(route: Route, ctx: Context) -> Response{
 
 pub fn main() {
     let pluv = pluvo.new()
-    io.println("Hello, world!")
+    |> pluvo.enable(my_middleware)
     
     //Routes
-    let routes = router.new() 
+    let routes = pluv |> pluvo.router 
     |> router.get("/", index.handler)
     |> router.get("/rand", rand.handler)
     |> router.get("/html_test", html_test.handler)
     |> router.get("/user/:id", user.view)
     |> router.get("/count", count.handler)
-    |> router.enable(my_middleware)
 
-    let auth = router.with_prefix("/admin")
+    let auth = pluv |> pluvo.router
+    |> router.prefix("/admin")
     |> router.get("/home", admin_home.handler)
 
     //Init

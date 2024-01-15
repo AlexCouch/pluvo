@@ -29,12 +29,8 @@ pub type Node{
     )
 }
 
-pub fn new() -> Router{
-    with_prefix("")
-}
-
-pub fn with_prefix(prefix: String) -> Router{
-    Router(prefix: prefix, tree: [], routes: dict.new(), middleware: [])
+pub fn prefix(router: Router, prefix: String) -> Router{
+    Router(..router, prefix: prefix)
 }
 
 fn create_nodes(paths: List(Path), nodes: List(Node)) -> List(Node){
@@ -183,7 +179,6 @@ pub fn get_route(router: Router, path: String) -> Option(Route){
 }
 
 pub fn join(router: Router, other: Router) -> Router{
-    let router = router |> apply_middleware
     let other = other |> apply_middleware
     let Router(_, nodes, routes, mw) = router
     let Router(_, other_nodes, other_routes, other_mw) = other
