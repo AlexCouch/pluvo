@@ -1,12 +1,11 @@
 import gleam/erlang/process
-import gleam/string
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 import gleam/bytes_builder
 import mist.{type Connection, type ResponseData}
-import pluvo/router.{type Router, type Route, Route}
+import pluvo/router.{type Router}
 import gleam/option.{Some, None}
-import pluvo/context.{type Context}
+import pluvo/context
 
 pub type Pluvo{
     Pluvo(router: Router)

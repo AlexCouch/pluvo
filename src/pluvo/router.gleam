@@ -1,31 +1,24 @@
+import gleam/io
 import gleam/dict.{type Dict}
 import gleam/string
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/http/response.{type Response}
-import mist.{type ResponseData}
 import pluvo/context.{type Context}
-import pluvo/path.{type Path, Segment, Parameter}
-import pluvo/util
-import gleam/io
+import pluvo/response.{type Response}
 
-pub type RouteHandler = fn(Context) -> Response(ResponseData)
-pub type Route{
-    Route(path: Path, method: RouteMethod)
-}
+import pluvo/path.{type Path, Segment, Parameter}
+import pluvo/route.{type Route, Route, type RouteMethod, RouteMethod, type RouteHandler, Get}
+import pluvo/util
+import pluvo/middleware.{type Middleware}
 
 //// Provides an interface for creating and registering custom routes
 pub type Router{
-    Router(prefix: String, tree: List(Node), routes: Dict(Path, Route))
-}
-
-pub type MethodKind{
-    Get 
-    Post 
-}
-
-pub type RouteMethod{
-    RouteMethod(kind: MethodKind, path: String, params: Dict(String, String), handler: RouteHandler)
+    Router(
+        prefix: String, 
+        tree: List(Node), 
+        routes: Dict(Path, Route), 
+        middleware: List(Middleware)
+    )
 }
 
 pub type Node{
@@ -41,7 +34,7 @@ pub fn new() -> Router{
 }
 
 pub fn with_prefix(prefix: String) -> Router{
-    Router(prefix: prefix, tree: [], routes: dict.new())
+    Router(prefix: prefix, tree: [], routes: dict.new(), middleware: [])
 }
 
 fn create_nodes(paths: List(Path), nodes: List(Node)) -> List(Node){
@@ -68,8 +61,8 @@ fn append(nodes: List(Node), router: Router) -> Router{
                 //If the head is in the node tree, then leave the router unchanged
                 use <- util.when(is_in_tree(router, head), router)
                 //Append the current node to the router tree
-                let Router(prefix: prefix, tree: tree, routes: routes) = router 
-                Router(prefix: prefix, tree: [head, ..tree], routes: routes)
+                let Router(prefix: prefix, tree: tree, routes: routes, middleware: mw) = router 
+                Router(prefix: prefix, tree: [head, ..tree], routes: routes, middleware: mw)
             }
             append(tail, router)
         }
@@ -78,9 +71,28 @@ fn append(nodes: List(Node), router: Router) -> Router{
 }
 
 fn add_route(router: Router, path: Path, method: RouteMethod) -> Router{
-    let Router(prefix: prefix, tree: tree, routes: routes) = router
+    let Router(prefix: prefix, tree: tree, routes: routes, middleware: mw) = router
 
-    Router(prefix: prefix, tree: tree, routes: dict.insert(into: routes, for: path, insert: Route(path, method)))
+    Router(prefix: prefix, tree: tree, routes: dict.insert(into: routes, for: path, insert: Route(path, method)), middleware: mw)
+}
+
+fn apply(route: Route, middleware: List(Middleware)) -> Route{
+    use <- util.when(list.is_empty(middleware), route)
+    //we can assert because we know this pattern will exist
+    let assert [first, ..rest] = middleware
+    let handler = first(route, _)
+    let method = route.method
+    let route = Route(..route, method: RouteMethod(..method, handler: handler))
+    apply(route, rest)
+}
+
+fn apply_middleware(router: Router) -> Router{
+    use <- util.when(list.is_empty(router.middleware), router)
+    let new_routes = router.routes
+    |> dict.map_values(fn(_, route){
+        route |> apply(router.middleware)
+    })
+    Router(..router, routes: new_routes)
 }
 
 pub fn add(router: Router, path: String, method: RouteMethod) -> Router{
@@ -171,7 +183,13 @@ pub fn get_route(router: Router, path: String) -> Option(Route){
 }
 
 pub fn join(router: Router, other: Router) -> Router{
-    let Router(_, nodes, routes) = router
-    let Router(_, other_nodes, other_routes) = other
-    Router("", list.append(nodes, other_nodes), dict.merge(routes, other_routes))
+    let router = router |> apply_middleware
+    let other = other |> apply_middleware
+    let Router(_, nodes, routes, mw) = router
+    let Router(_, other_nodes, other_routes, other_mw) = other
+    Router("", list.append(nodes, other_nodes), dict.merge(routes, other_routes), list.append(mw, other_mw))
+}
+
+pub fn enable(router: Router, middleware: Middleware) -> Router{
+    Router(..router, middleware: [middleware, ..router.middleware])
 }
