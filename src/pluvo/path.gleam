@@ -3,6 +3,8 @@ import gleam/string
 import gleam/list
 import gleam/io
 
+import pluvo/util
+
 pub type Path{
     Path(parts: List(PathPart), length: Int)
 }
@@ -32,10 +34,8 @@ pub fn reduce_dups(parts: List(String)) -> List(String){
 }
 
 pub fn to_part(part: String) -> PathPart{
-    case string.starts_with(part, ":"){
-        True -> Parameter(string.drop_left(part, 1))
-        False -> Segment(part)
-    }
+    use <- util.whennot(string.starts_with(part, ":"), Segment(part))
+    Parameter(string.drop_left(part, 1))
 }
 
 pub fn create_parts(parts: List(String)) -> List(PathPart){
@@ -68,10 +68,8 @@ pub fn is_parameter(path: Path) -> Bool{
 pub fn is_parent(path: Path, other: Path) -> Bool{
     case get_parent(path){
         Some(parent) -> {
-            case compare(parent, other){
-                True -> True
-                False -> is_parent(parent, other)
-            }
+            use <- util.when(compare(parent, other), True)
+            is_parent(parent, other)
         }
         None -> False
     }
@@ -86,38 +84,32 @@ pub fn shares_parent(path: Path, other: Path) -> Bool{
 
 pub fn compare(path: Path, other: Path) -> Bool{
     //We need an additional check for length
-    case path.length == other.length{
-        False -> False
-        True -> {
-            case path, other{
-                //Compare the current segments
-                Path([head, ..tail], _), Path([other_head, ..other_tail], _) -> {
-                    //We need to check if the left head is a parameter or not
-                    //because if it is a parameter, then we need to treat the 
-                    //right head as a parameter
-                    case head, other_head{
-                        //If it's a param, just skip over it
-                        Parameter(_), _ -> compare(new(tail), new(other_tail))
-                        //Otherwise, if it's two segments being compared, then 
-                        //compare the inner segments
-                        Segment(seg), Segment(other_seg) -> {
-                            case seg == other_seg{
-                                True -> compare(new(tail), new(other_tail))
-                                False -> False
-                            }
-                        }
-                        _, _ -> False
-                    }
+    use <- util.whennot(on: path.length == other.length, then: False)
+    case path, other{
+        //Compare the current segments
+        Path([head, ..tail], _), Path([other_head, ..other_tail], _) -> {
+            //We need to check if the left head is a parameter or not
+            //because if it is a parameter, then we need to treat the 
+            //right head as a parameter
+            case head, other_head{
+                //If it's a param, just skip over it
+                Parameter(_), _ -> compare(new(tail), new(other_tail))
+                //Otherwise, if it's two segments being compared, then 
+                //compare the inner segments
+                Segment(seg), Segment(other_seg) -> {
+                    use <- util.whennot(seg == other_seg, False)
+                    compare(new(tail), new(other_tail))
                 }
-                //If we have reached the end of both paths, then return True
-                //This means we have two paths with the same lengths
-                //We ignore the lengths because we infer them from the empty list pattern
-                Path([], _), Path([], _) -> True
-                //Otherwise, return False
-                //This most likely means that the lengths of the two paths are different
                 _, _ -> False
             }
         }
+        //If we have reached the end of both paths, then return True
+        //This means we have two paths with the same lengths
+        //We ignore the lengths because we infer them from the empty list pattern
+        Path([], _), Path([], _) -> True
+        //Otherwise, return False
+        //This most likely means that the lengths of the two paths are different
+        _, _ -> False
     }
 }
 

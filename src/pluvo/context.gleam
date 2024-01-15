@@ -6,6 +6,7 @@ import gleam/bytes_builder
 import simplifile
 import gleam/dict.{type Dict}
 import gleam/option.{type Option, Some, None}
+import pluvo/util
 
 pub type Context{
     Context(
@@ -42,14 +43,10 @@ pub fn error(ctx: Context, message: String) -> Response(ResponseData){
 }
 
 pub fn html(ctx: Context, path: String) -> Response(ResponseData){
-    case simplifile.read(from: path){
-        Ok(data) -> {
-            let body = mist.Bytes(bytes_builder.from_string(data))
-            ctx.resp 
-            |> response.set_body(body)
-        }
-        Error(_) -> ctx |> error("Failed to get html file: " <> path)
-    }
+    use data <- util.when_ok(simplifile.read(from: path), ctx |> error("Failed to get html file: " <> path))
+    let body = mist.Bytes(bytes_builder.from_string(data))
+    ctx.resp 
+    |> response.set_body(body)
 }
 
 pub fn get_method(ctx: Context) -> String{
@@ -69,6 +66,11 @@ pub fn get_param(ctx: Context, key: String) -> Option(String){
 pub fn add_param(ctx: Context, key: String, value: String) -> Context{
     let Context(request: req, resp: resp, params: params) = ctx
     Context(req, resp, dict.insert(params, key, value))
+}
+
+pub fn add_params(ctx: Context, params: Dict(String, String)) -> Context{
+    let Context(request: req, resp: resp, params: ctxparams) = ctx
+    Context(req, resp, dict.merge(ctxparams, params))
 }
 
 ///Apply a callback onto a result object if it exists, returning data to send back to the client

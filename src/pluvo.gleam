@@ -3,7 +3,7 @@ import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 import gleam/bytes_builder
 import mist.{type Connection, type ResponseData}
-import pluvo/router.{type Router, RouteContext}
+import pluvo/router.{type Router, Route}
 import gleam/option.{Some, None}
 import pluvo/context
 import pluvo/group.{type Group, Group}
@@ -42,8 +42,12 @@ pub fn start(pluvo: Pluvo, port: Int){
     let assert Ok(_) =
         fn(req: Request(Connection)) -> Response(ResponseData){
             let ctx = context.new(req)
-            case router.get_route(ctx, pluvo.router, req.path){
-                Some(RouteContext(route, ctx)) -> route.method.handler(ctx)
+            case router.get_route(pluvo.router, req.path){
+                Some(Route(method: method, ..)) -> {
+                    ctx
+                    |> context.add_params(method.params)
+                    |> method.handler
+                }
                 None -> not_found
             }
         }

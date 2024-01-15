@@ -5,6 +5,8 @@ import gleam/http/response.{type Response}
 import mist.{type ResponseData}
 import pluvo/context.{type Context}
 import pluvo/path.{type Path, Segment, Parameter}
+import pluvo/util
+import gleam/io
 
 pub type RouteHandler = fn(Context) -> Response(ResponseData)
 pub type Route{
@@ -16,17 +18,13 @@ pub type Router{
     Router(tree: List(Node), routes: Dict(Path, Route))
 }
 
-pub type RouteContext{
-    RouteContext(route: Route, ctx: Context)
-}
-
 pub type MethodKind{
     Get 
     Post 
 }
 
 pub type RouteMethod{
-    RouteMethod(kind: MethodKind, path: String, param_names: List(String), handler: RouteHandler)
+    RouteMethod(kind: MethodKind, path: String, params: Dict(String, String), handler: RouteHandler)
 }
 
 pub type Node{
@@ -61,14 +59,12 @@ fn append(nodes: List(Node), router: Router) -> Router{
         [head, ..tail] -> {
             //If the head node is in the tree, then just skip to appending the tail 
             //Otherwise, add the head to the current router tree then append the tail
-            let router = case is_in_tree(router, head){
-                False -> {
-                    //Append the current node to the router tree
-                    let Router(tree: tree, routes: routes) = router 
-                    Router(tree: [head, ..tree], routes: routes)
-                }
-                //Return the router unchanged
-                True -> router
+            let router = {
+                //If the head is in the node tree, then leave the router unchanged
+                use <- util.when(is_in_tree(router, head), router)
+                //Append the current node to the router tree
+                let Router(tree: tree, routes: routes) = router 
+                Router(tree: [head, ..tree], routes: routes)
             }
             append(tail, router)
         }
@@ -94,29 +90,21 @@ pub fn add(router: Router, path: String, method: RouteMethod) -> Router{
 }
 
 pub fn get(router: Router, path: String, handler: RouteHandler) -> Router{
-    let method = RouteMethod(Get, path, [], handler)
+    let method = RouteMethod(Get, path, dict.new(), handler)
     add(router, path, method)
 }
 
 fn compare_param(path: Path, node: Node) -> Bool{
-    case path.is_parameter(node.path){
-        False -> False
-        True -> path.shares_parent(path, node.path)
-    }
+    use <- util.whennot(on: path.is_parameter(node.path), then: False)
+    path.shares_parent(path, node.path)
 }
 
 fn get_lcp(path: Path, nodes: List(Node)) -> Option(Path){
     case nodes{
         [first, ..rest] -> {
-            case path.compare(path, first.path){
-                True -> Some(first.path)
-                False -> {
-                    case compare_param(path, first){
-                        True -> Some(first.path)
-                        False -> get_lcp(path, rest)
-                    }
-                }
-            }
+            use <- util.when(on: path.compare(path, first.path), then: Some(first.path))
+            use <- util.when(on: compare_param(path, first), then: Some(first.path))
+            get_lcp(path, rest)
         }
         _ -> None
     }
@@ -127,34 +115,37 @@ pub type RouteParameter{
 }
 
 pub fn get_param(route: Route, path: Path) -> Option(RouteParameter){
-    case path.is_parameter(route.path){
-        False -> None
-        True -> case path.last(path), path.last(route.path){
-            Some(Segment(value)), Some(path.Parameter(name)) -> Some(Parameter(name, value))
-            _, _ -> None
-        }
+    use <- util.whennot(path.is_parameter(route.path), None)
+    case path.last(path), path.last(route.path){
+        Some(Segment(value)), Some(path.Parameter(name)) -> Some(Parameter(name, value))
+        _, _ -> None
     }
 }
 
-pub fn get_route(ctx: Context, router: Router, path: String) -> Option(RouteContext){
+pub fn add_params(route: Option(Route), path: Path) -> Option(Route){
+    use route <- option.then(route)
+    let Route(method: RouteMethod(params: params, kind: kind, handler: handler, path: mpath), ..) = route
+    use param <- util.when_none(get_param(route, path), Some(route))
+
+    let params = params
+    |> dict.insert(param.name, param.value)
+
+    Route(method: RouteMethod(params: params, kind: kind, handler: handler, path: mpath), path: route.path)
+    |> Some
+}
+
+pub fn get_route(router: Router, path: String) -> Option(Route){
     let path = path 
     |> path.from_string
 
-    let route = path
+    path
     |> get_lcp(router.tree)
     |> option.map(fn(path){
         dict.get(router.routes, path)
         |> option.from_result
     })
     |> option.flatten
-
-    use route <- option.then(route)
-    use param <- option.then(get_param(route, path))
-    let ctx = ctx 
-    |> context.add_param(param.name, param.value)
-    
-    RouteContext(route, ctx)
-    |> Some
+    |> add_params(path)
 }
 
 pub fn join(router: Router, other: Router) -> Router{
