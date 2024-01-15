@@ -1,4 +1,5 @@
 import gleam/dict.{type Dict}
+import gleam/string
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/http/response.{type Response}
@@ -15,7 +16,7 @@ pub type Route{
 
 //// Provides an interface for creating and registering custom routes
 pub type Router{
-    Router(tree: List(Node), routes: Dict(Path, Route))
+    Router(prefix: String, tree: List(Node), routes: Dict(Path, Route))
 }
 
 pub type MethodKind{
@@ -35,8 +36,12 @@ pub type Node{
     )
 }
 
-pub fn new_router() -> Router{
-    Router([], dict.new())
+pub fn new() -> Router{
+    with_prefix("")
+}
+
+pub fn with_prefix(prefix: String) -> Router{
+    Router(prefix: prefix, tree: [], routes: dict.new())
 }
 
 fn create_nodes(paths: List(Path), nodes: List(Node)) -> List(Node){
@@ -63,8 +68,8 @@ fn append(nodes: List(Node), router: Router) -> Router{
                 //If the head is in the node tree, then leave the router unchanged
                 use <- util.when(is_in_tree(router, head), router)
                 //Append the current node to the router tree
-                let Router(tree: tree, routes: routes) = router 
-                Router(tree: [head, ..tree], routes: routes)
+                let Router(prefix: prefix, tree: tree, routes: routes) = router 
+                Router(prefix: prefix, tree: [head, ..tree], routes: routes)
             }
             append(tail, router)
         }
@@ -73,9 +78,9 @@ fn append(nodes: List(Node), router: Router) -> Router{
 }
 
 fn add_route(router: Router, path: Path, method: RouteMethod) -> Router{
-    let Router(tree: tree, routes: routes) = router
+    let Router(prefix: prefix, tree: tree, routes: routes) = router
 
-    Router(tree: tree, routes: dict.insert(into: routes, for: path, insert: Route(path, method)))
+    Router(prefix: prefix, tree: tree, routes: dict.insert(into: routes, for: path, insert: Route(path, method)))
 }
 
 pub fn add(router: Router, path: String, method: RouteMethod) -> Router{
@@ -89,7 +94,24 @@ pub fn add(router: Router, path: String, method: RouteMethod) -> Router{
     |> add_route(path, method)
 }
 
+fn append_prefix(prefix, path: String) -> String{
+    //When the prefix is empty, just yield the path
+    use <- util.when(string.is_empty(prefix), path)
+    let path = {
+        use <- util.when(string.starts_with(path, "/"), string.drop_left(path, 1))
+        path
+    }
+    let prefix = {
+        use <- util.when(string.ends_with(path, "/"), string.drop_right(path, 1))
+        prefix
+    }
+    prefix <> "/" <> path
+}
+
 pub fn get(router: Router, path: String, handler: RouteHandler) -> Router{
+    let path = router.prefix 
+    |> append_prefix(path)
+
     let method = RouteMethod(Get, path, dict.new(), handler)
     add(router, path, method)
 }
@@ -149,7 +171,7 @@ pub fn get_route(router: Router, path: String) -> Option(Route){
 }
 
 pub fn join(router: Router, other: Router) -> Router{
-    let Router(nodes, routes) = router
-    let Router(other_nodes, other_routes) = other
-    Router(list.append(nodes, other_nodes), dict.merge(routes, other_routes))
+    let Router(_, nodes, routes) = router
+    let Router(_, other_nodes, other_routes) = other
+    Router("", list.append(nodes, other_nodes), dict.merge(routes, other_routes))
 }

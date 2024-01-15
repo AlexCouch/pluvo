@@ -1,31 +1,23 @@
 import gleam/erlang/process
+import gleam/string
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 import gleam/bytes_builder
 import mist.{type Connection, type ResponseData}
-import pluvo/router.{type Router, Route}
+import pluvo/router.{type Router, type Route, Route}
 import gleam/option.{Some, None}
-import pluvo/context
-import pluvo/group.{type Group, Group}
+import pluvo/context.{type Context}
 
 pub type Pluvo{
     Pluvo(router: Router)
 }
 
 pub fn new() -> Pluvo{
-    Pluvo(router.new_router())
+    Pluvo(router.new())
 }
 
 pub fn router(pluvo: Pluvo) -> Router{
     pluvo.router
-}
-
-pub fn group(pluvo: Pluvo, prefix: String) -> Group{
-    Group(prefix, pluvo.router)
-}
-
-pub fn add_group(pluvo: Pluvo, group: group.Group) -> Pluvo{
-    Pluvo(router.join(pluvo.router, group.router))
 }
 
 pub fn add_router(pluvo: Pluvo, router: Router) -> Pluvo{
@@ -43,10 +35,10 @@ pub fn start(pluvo: Pluvo, port: Int){
         fn(req: Request(Connection)) -> Response(ResponseData){
             let ctx = context.new(req)
             case router.get_route(pluvo.router, req.path){
-                Some(Route(method: method, ..)) -> {
+                Some(route) -> {
                     ctx
-                    |> context.add_params(method.params)
-                    |> method.handler
+                    |> context.add_params(route.method.params)
+                    |> route.method.handler
                 }
                 None -> not_found
             }
