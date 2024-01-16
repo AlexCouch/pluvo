@@ -31,6 +31,10 @@ pub fn prefix(router: Router, prefix: String) -> Router {
   Router(..router, prefix: prefix)
 }
 
+pub fn with_prefix(router: Router, other: Router, prefix: String) -> Router {
+  Router(..router, prefix: other.prefix <> "/" <> prefix)
+}
+
 fn create_nodes(paths: List(Path), nodes: List(Node)) -> List(Node) {
   case paths {
     [first, ..rest] -> {

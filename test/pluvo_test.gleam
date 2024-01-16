@@ -1,4 +1,4 @@
-import pluvo
+import pluvo.{type Pluvo}
 import pluvo/router
 import routes/index
 import routes/rand
@@ -18,30 +18,30 @@ pub fn my_middleware(route: Route, ctx: Context) -> Response {
   |> route.method.handler
 }
 
-pub fn main() {
-  let pluv =
-    pluvo.new()
-    |> pluvo.enable(my_middleware)
-
-  //Routes
-  let routes =
+pub fn v1(pluv: Pluvo) -> Pluvo {
+  let api =
     pluv
     |> pluvo.router
+    |> router.prefix("api/v1")
     |> router.get("/", index.handler)
     |> router.get("/rand", rand.handler)
     |> router.get("/html_test", html_test.handler)
-    |> router.get("/user/:id", user.view)
-    |> router.get("/count", count.handler)
 
-  let auth =
+  let user =
     pluv
     |> pluvo.router
-    |> router.prefix("/admin")
-    |> router.get("/home", admin_home.handler)
+    |> router.with_prefix(api, "user")
+    |> router.get("/:id", user.handler)
+    |> io.debug
 
-  //Init
   pluv
-  |> pluvo.add_router(routes)
-  |> pluvo.add_router(auth)
+  |> pluvo.add_router(api)
+  |> pluvo.add_router(user)
+}
+
+pub fn main() {
+  pluvo.new()
+  |> pluvo.enable(my_middleware)
+  |> v1
   |> pluvo.start(3000)
 }
