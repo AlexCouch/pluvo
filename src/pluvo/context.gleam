@@ -109,8 +109,7 @@ pub fn get_cookie(ctx: Context, name: String) -> Option(String) {
 pub fn set_header(ctx: Context, name: String, value: String) -> Context{
     let resp = ctx.resp
     |> response.set_header(name, value)
-    Context(..ctx)
-
+    Context(..ctx, resp: resp)
 }
 
 ///Apply a callback onto a result object if it exists, returning data to send back to the client
