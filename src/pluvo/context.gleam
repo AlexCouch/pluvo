@@ -1,4 +1,8 @@
 import gleam/http
+import gleam/http/cookie as http_cookie
+import gleam/result
+import gleam/io
+import gleam/list
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response, Response}
 import mist.{type Connection, type ResponseData}
@@ -6,6 +10,7 @@ import gleam/bytes_builder
 import simplifile
 import gleam/dict.{type Dict}
 import gleam/option.{type Option, None, Some}
+import pluvo/cookie.{type Cookie, Cookie}
 import pluvo/util
 
 pub type Context {
@@ -75,6 +80,37 @@ pub fn add_param(ctx: Context, key: String, value: String) -> Context {
 pub fn add_params(ctx: Context, params: Dict(String, String)) -> Context {
   let Context(request: req, resp: resp, params: ctxparams) = ctx
   Context(req, resp, dict.merge(ctxparams, params))
+}
+
+
+pub fn new_cookie(ctx: Context) -> Cookie{
+    http_cookie.defaults(ctx.request.scheme)
+    |> Cookie("", "")
+}
+
+
+pub fn set_cookie(ctx: Context, cookie: Cookie) -> Context{
+    let resp = ctx.resp
+    |> response.set_cookie(cookie.name, cookie.value, cookie.attributes)
+
+    Context(..ctx, resp: resp)
+}
+
+pub fn get_cookie(ctx: Context, name: String) -> Option(String) {
+  ctx.request
+  |> request.get_cookies
+  |> list.find(fn(cookie) { cookie.0 == name })
+  |> result.map(fn(cookie){
+      cookie.1
+  })
+  |> option.from_result
+}
+
+pub fn set_header(ctx: Context, name: String, value: String) -> Context{
+    let resp = ctx.resp
+    |> response.set_header(name, value)
+    Context(..ctx)
+
 }
 
 ///Apply a callback onto a result object if it exists, returning data to send back to the client
