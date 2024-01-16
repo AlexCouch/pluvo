@@ -32,7 +32,9 @@ pub fn prefix(router: Router, prefix: String) -> Router {
 }
 
 pub fn with_prefix(router: Router, other: Router, prefix: String) -> Router {
-  Router(..router, prefix: other.prefix <> "/" <> prefix)
+  let prefix = other.prefix
+  |> append_prefix(prefix)
+  Router(..router, prefix: prefix)
 }
 
 fn create_nodes(paths: List(Path), nodes: List(Node)) -> List(Node) {
@@ -86,6 +88,11 @@ fn add_route(router: Router, path: Path, method: RouteMethod) -> Router {
   )
 }
 
+//// Applies a list of middleware functions to a given Route
+//// 
+//// The list of Middleware's is recursively applied to the route by
+//// capturing each Middleware function with the route to get a new 
+//// handler which will replace the old route
 fn apply(route: Route, middleware: List(Middleware)) -> Route {
   use <- util.when(list.is_empty(middleware), route)
   //we can assert because we know this pattern will exist
@@ -96,11 +103,20 @@ fn apply(route: Route, middleware: List(Middleware)) -> Route {
   apply(route, rest)
 }
 
+//// Applies all midddlewares to all routes in the given Router
+//// 
+//// This will map the values of the router.routes dict and pipe 
+//// each route to the `apply` function with the router's middleware
+//// This results in a new dict of routes which have the middleware functions 
+//// wrapping the original routes.
 fn apply_middleware(router: Router) -> Router {
+  ///When the middleware list is empty, just return the router as-is
   use <- util.when(list.is_empty(router.middleware), router)
+  //Map the values of the router.routes with each route piped to `apply`
   let new_routes =
     router.routes
     |> dict.map_values(fn(_, route) {
+      ///Apply the route to the router's middleware list
       route
       |> apply(router.middleware)
     })
@@ -123,14 +139,18 @@ fn append_prefix(prefix, path: String) -> String {
   //When the prefix is empty, just yield the path
   use <- util.when(string.is_empty(prefix), path)
   let path = {
+    ///When the path starts with "/", then drop it
     use <- util.when(string.starts_with(path, "/"), string.drop_left(path, 1))
     path
   }
+  ///this will take the prefix and drops the end if it ends with "/"
   let prefix = {
-    use <- util.when(string.ends_with(path, "/"), string.drop_right(path, 1))
+    ///When the path ends with "/", then drop it
+    use <- util.when(string.ends_with(prefix, "/"), string.drop_right(prefix, 1))
     prefix
   }
-  prefix <> "/" <> path
+  let new_path = prefix <> "/" <> path
+  new_path |> io.debug
 }
 
 pub fn get(router: Router, path: String, handler: RouteHandler) -> Router {

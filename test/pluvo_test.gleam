@@ -19,7 +19,7 @@ pub fn v1(pluv: Pluvo) -> Pluvo {
   let api =
     pluv
     |> pluvo.router
-    |> router.prefix("api/v1")
+    |> router.prefix("api/v1/")
     |> router.get("/", index.handler)
     |> router.get("/rand", rand.handler)
     |> router.get("/html_test", html_test.handler)
