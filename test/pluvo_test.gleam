@@ -13,7 +13,6 @@ import pluvo/middleware/cors
 import gleam/io
 
 pub fn v1(pluv: Pluvo) -> Pluvo {
-
   let api =
     pluv
     |> pluvo.router
