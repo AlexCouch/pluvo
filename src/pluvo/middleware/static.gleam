@@ -35,14 +35,19 @@ pub fn static_mw(config: StaticConfig, next: RouteHandler) -> RouteHandler{
 }
 
 pub fn static_handler(config: StaticConfig, next: RouteHandler, ctx: Context) -> Response{
+    //If the config.root has a leading '/', then drop it
+    let root = {
+        use <- util.when(on: string.starts_with(config.root, "/"), then: string.drop_left(config.root, 1))
+        config.root
+    }
+    //If the path has the parameter '*' then get the parameter and use it
     let path = {
-        use <- util.whennot(on: path.has_parameter(ctx.path, "*"), then: string.append(config.root, ctx.request.path))
+        use <- util.whennot(on: path.has_parameter(ctx.path, "*"), then: string.append(root, ctx.request.path))
         ctx
         |> context.get_param("*")
         |> option.unwrap("")
-        |> string.append(config.root)
-        |> io.debug
-    } |> io.debug
+        |> string.append(root)
+    }
     //TODO: Add logic to ignore base
     use <- util.whennot(simplifile.is_file(path), next(ctx))
     use static_contents <- context.then(simplifile.read(path) |> option.from_result)
