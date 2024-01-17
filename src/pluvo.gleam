@@ -34,21 +34,18 @@ pub fn enable(pluvo: Pluvo, middleware: Middleware) -> Pluvo {
 pub fn start(pluvo: Pluvo, port: Int) {
   let selector = process.new_selector()
 
-  let not_found =
-    response.new(404)
-    |> response.set_body(mist.Bytes(bytes_builder.new()))
-
   let assert Ok(_) =
     fn(req: Request(Connection)) -> Response(ResponseData) {
       let ctx = context.new(req)
-      case router.get_route(pluvo.router, req.path) {
-        Some(route) -> {
-          ctx
-          |> context.add_params(route.method.params)
-          |> route.method.handler
-        }
-        None -> not_found
-      }
+
+      let route = 
+      router.get_route(pluvo.router, req.path) 
+      |> router.apply(pluvo.router.middleware)
+
+      ctx
+      |> context.add_params(route.method.params)
+      |> context.set_path(route.path)
+      |> route.method.handler
     }
     |> mist.new
     |> mist.port(port)

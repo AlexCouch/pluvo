@@ -10,6 +10,7 @@ import pluvo/route.{type Route}
 import pluvo/response.{type Response}
 import pluvo/context.{type Context}
 import pluvo/middleware/cors
+import pluvo/middleware/static
 import gleam/io
 
 pub fn v1(pluv: Pluvo) -> Pluvo {
@@ -42,9 +43,11 @@ pub fn v1(pluv: Pluvo) -> Pluvo {
 
 pub fn main() {
   let cors = cors.new()
+  let static = static.new("/static")
 
   pluvo.new()
   |> pluvo.enable(cors)
+  |> pluvo.enable(static)
   |> v1
   |> pluvo.start(3000)
 }

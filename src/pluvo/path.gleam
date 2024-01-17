@@ -1,7 +1,6 @@
 import gleam/option.{type Option, None, Some}
 import gleam/string
 import gleam/list
-import gleam/io
 import pluvo/util
 
 pub type Path {
@@ -63,6 +62,19 @@ pub fn is_parameter(path: Path) -> Bool {
     Some(Parameter(_)) -> True
     _ -> False
   }
+}
+
+pub fn has_parameter(path: Path, param: String) -> Bool{
+    case
+      path
+      |> last
+    {
+        Some(Parameter(pname)) -> {
+            use <- util.when(pname == param, True)
+            False
+        }
+        _ -> False
+    }
 }
 
 pub fn is_parent(path: Path, other: Path) -> Bool {

@@ -12,11 +12,13 @@ import gleam/dict.{type Dict}
 import gleam/option.{type Option, None, Some}
 import pluvo/cookie.{type Cookie, Cookie}
 import pluvo/util
+import pluvo/path.{type Path}
 
 pub type Context {
   Context(
     request: Request(Connection),
     resp: Response(ResponseData),
+    path: Path,
     params: Dict(String, String),
   )
 }
@@ -27,12 +29,19 @@ fn default_response() {
 }
 
 pub fn new(request: Request(Connection)) {
-  Context(request, default_response(), dict.new())
+  Context(request, default_response(),
+  request.path |> path.from_string,
+  dict.new())
 }
 
-pub fn set_status(ctx: Context, status: Int) -> Response(ResponseData) {
+pub fn set_path(ctx: Context, path: Path) -> Context{
+    Context(..ctx, path: path)
+}
+
+pub fn set_status(ctx: Context, status: Int) -> Context {
   let Response(status: _, headers: headers, body: body) = ctx.resp
-  Response(status: status, headers: headers, body: body)
+  let resp = Response(status: status, headers: headers, body: body)
+  Context(..ctx, resp: resp)
 }
 
 pub fn text(ctx: Context, text: String) -> Response(ResponseData) {
@@ -41,8 +50,13 @@ pub fn text(ctx: Context, text: String) -> Response(ResponseData) {
   Response(status: status, headers: headers, body: body)
 }
 
-pub fn error(ctx: Context, message: String) -> Response(ResponseData) {
+pub fn error(ctx: Context, code: Int, message: String) -> Response(ResponseData) {
   let body = mist.Bytes(bytes_builder.from_string(message))
+
+  let ctx = 
+  ctx 
+  |> set_status(code)
+
   ctx.resp
   |> response.set_body(body)
 }
@@ -51,7 +65,8 @@ pub fn html(ctx: Context, path: String) -> Response(ResponseData) {
   use data <- util.when_ok(
     simplifile.read(from: path),
     ctx
-    |> error("Failed to get html file: " <> path),
+    //TODO: Respond with correct code
+    |> error(404, "Failed to get html file: " <> path),
   )
   let body = mist.Bytes(bytes_builder.from_string(data))
   ctx.resp
@@ -73,13 +88,13 @@ pub fn get_param(ctx: Context, key: String) -> Option(String) {
 }
 
 pub fn add_param(ctx: Context, key: String, value: String) -> Context {
-  let Context(request: req, resp: resp, params: params) = ctx
-  Context(req, resp, dict.insert(params, key, value))
+  let Context(request: req, resp: resp, params: params, ..) = ctx
+  Context(..ctx, request: req, resp: resp, params: dict.insert(params, key, value))
 }
 
 pub fn add_params(ctx: Context, params: Dict(String, String)) -> Context {
-  let Context(request: req, resp: resp, params: ctxparams) = ctx
-  Context(req, resp, dict.merge(ctxparams, params))
+  let Context(request: req, resp: resp, params: ctxparams, ..) = ctx
+  Context(..ctx, request: req, resp: resp, params: dict.merge(ctxparams, params))
 }
 
 pub fn new_cookie(ctx: Context) -> Cookie {

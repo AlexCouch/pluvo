@@ -13,6 +13,7 @@ pub type Route {
 pub type MethodKind {
   Get
   Post
+  NotFound
 }
 
 pub type RouteMethod {

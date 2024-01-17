@@ -21,6 +21,7 @@ import pluvo/response.{type Response}
 import pluvo/path.{type Path, Parameter, Segment}
 import pluvo/route.{
   type Route, type RouteHandler, type RouteMethod, Get, Route, RouteMethod,
+  NotFound
 }
 import pluvo/util
 import pluvo/middleware.{type Middleware}
@@ -34,8 +35,17 @@ pub type Router {
   )
 }
 
+pub fn route_not_found(ctx: Context) -> Response{
+    ctx
+    |> context.error(404, "Page does not exist!")
+}
+
+pub fn route_not_found_route() -> Route{
+    Route("route_not_found" |> path.from_string, RouteMethod(NotFound, "", dict.new(), route_not_found))
+}
+
 pub type Node {
-  Node(path: Path, methods: List(RouteMethod), is_handler: Bool)
+  Node(path: Path, methods: List(RouteMethod), is_handler: Bool, not_found: RouteHandler)
 }
 
 pub fn prefix(router: Router, prefix: String) -> Router {
@@ -52,7 +62,7 @@ pub fn with_prefix(router: Router, other: Router, prefix: String) -> Router {
 fn create_nodes(paths: List(Path), nodes: List(Node)) -> List(Node) {
   case paths {
     [first, ..rest] -> {
-      let node = Node(first, [], False)
+      let node = Node(first, [], False, route_not_found)
       let nodes = [node, ..nodes]
       create_nodes(rest, nodes)
     }
@@ -73,13 +83,11 @@ fn append(nodes: List(Node), router: Router) -> Router {
         //If the head is in the node tree, then leave the router unchanged
         use <- util.when(is_in_tree(router, head), router)
         //Append the current node to the router tree
-        let Router(prefix: prefix, tree: tree, routes: routes, middleware: mw) =
+        let Router(tree: tree, ..) =
           router
         Router(
-          prefix: prefix,
+          ..router,
           tree: [head, ..tree],
-          routes: routes,
-          middleware: mw,
         )
       }
       append(tail, router)
@@ -89,18 +97,14 @@ fn append(nodes: List(Node), router: Router) -> Router {
 }
 
 fn add_route(router: Router, path: Path, method: RouteMethod) -> Router {
-  let Router(prefix: prefix, tree: tree, routes: routes, middleware: mw) =
-    router
-
+  let Router(routes: routes, ..) = router
   Router(
-    prefix: prefix,
-    tree: tree,
-    routes: dict.insert(into: routes, for: path, insert: Route(path, method)),
-    middleware: mw,
+    ..router,
+    routes: dict.insert(into: routes, for: path, insert: Route(path, method))
   )
 }
 
-fn apply(route: Route, middleware: List(Middleware)) -> Route {
+pub fn apply(route: Route, middleware: List(Middleware)) -> Route {
   use <- util.when(list.is_empty(middleware), route)
   //we can assert because we know this pattern will exist
   let assert [first, ..rest] = middleware
@@ -110,7 +114,7 @@ fn apply(route: Route, middleware: List(Middleware)) -> Route {
   apply(route, rest)
 }
 
-fn apply_middleware(router: Router) -> Router {
+pub fn apply_middleware(router: Router) -> Router {
   use <- util.when(list.is_empty(router.middleware), router)
   //Map the values of the router.routes with each route piped to `apply`
   let new_routes =
@@ -170,14 +174,14 @@ fn compare_param(path: Path, node: Node) -> Bool {
   path.shares_parent(path, node.path)
 }
 
-fn get_lcp(path: Path, nodes: List(Node)) -> Option(Path) {
+fn get_lcp(path: Path, nodes: List(Node)) -> Option(Node) {
   case nodes {
     [first, ..rest] -> {
       use <- util.when(
         on: path.compare(path, first.path),
-        then: Some(first.path),
+        then: Some(first),
       )
-      use <- util.when(on: compare_param(path, first), then: Some(first.path))
+      use <- util.when(on: compare_param(path, first), then: Some(first))
       get_lcp(path, rest)
     }
     _ -> None
@@ -226,25 +230,24 @@ pub fn add_params(route: Option(Route), path: Path) -> Option(Route) {
   |> Some
 }
 
-pub fn get_route(router: Router, path: String) -> Option(Route) {
+pub fn get_route(router: Router, path: String) -> Route {
   let path =
     path
     |> path.from_string
 
   path
   |> get_lcp(router.tree)
-  |> option.map(fn(path) {
-    dict.get(router.routes, path)
+  |> option.map(fn(node) {
+    dict.get(router.routes, node.path)
     |> option.from_result
+    |> option.or(Some(Route(node.path, RouteMethod(NotFound, "", dict.new(), node.not_found))))
   })
   |> option.flatten
   |> add_params(path)
+  |> option.unwrap(route_not_found_route())
 }
 
 pub fn join(router: Router, other: Router) -> Router {
-  let other =
-    other
-    |> apply_middleware
   let Router(_, nodes, routes, mw) = router
   let Router(_, other_nodes, other_routes, other_mw) = other
   Router(
