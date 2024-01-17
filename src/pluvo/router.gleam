@@ -104,7 +104,7 @@ fn apply(route: Route, middleware: List(Middleware)) -> Route {
   use <- util.when(list.is_empty(middleware), route)
   //we can assert because we know this pattern will exist
   let assert [first, ..rest] = middleware
-  let handler = first(route, _)
+  let handler = first(route.method.handler)
   let method = route.method
   let route = Route(..route, method: RouteMethod(..method, handler: handler))
   apply(route, rest)

@@ -1,6 +1,5 @@
-import pluvo/response.{type Response}
-import pluvo/route.{type Route}
-import pluvo/context.{type Context}
+import pluvo/route
 
 pub type Middleware =
-  fn(Route, Context) -> Response
+  fn(route.RouteHandler)->route.RouteHandler
+

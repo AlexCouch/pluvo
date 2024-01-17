@@ -9,18 +9,11 @@ import routes/admin_home
 import pluvo/route.{type Route}
 import pluvo/response.{type Response}
 import pluvo/context.{type Context}
+import pluvo/middleware/cors
 import gleam/io
 
-pub fn my_middleware(route: Route, ctx: Context) -> Response {
-  ctx
-  |> context.get_header("Accept-Language")
-  |> io.debug
-
-  ctx
-  |> route.method.handler
-}
-
 pub fn v1(pluv: Pluvo) -> Pluvo {
+
   let api =
     pluv
     |> pluvo.router
@@ -49,8 +42,10 @@ pub fn v1(pluv: Pluvo) -> Pluvo {
 }
 
 pub fn main() {
+  let cors = cors.new()
+
   pluvo.new()
-  |> pluvo.enable(my_middleware)
+  |> pluvo.enable(cors)
   |> v1
   |> pluvo.start(3000)
 }
