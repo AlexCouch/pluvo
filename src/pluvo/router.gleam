@@ -20,8 +20,8 @@ import pluvo/context.{type Context}
 import pluvo/response.{type Response}
 import pluvo/path.{type Path, Parameter, Segment}
 import pluvo/route.{
-  type Route, type RouteHandler, type RouteMethod, Get, Route, RouteMethod,
-  NotFound
+  type Route, type RouteHandler, type RouteMethod, Get, NotFound, Route,
+  RouteMethod,
 }
 import pluvo/util
 import pluvo/middleware.{type Middleware}
@@ -35,17 +35,26 @@ pub type Router {
   )
 }
 
-pub fn route_not_found(ctx: Context) -> Response{
-    ctx
-    |> context.error(404, "Page does not exist!")
+pub fn route_not_found(ctx: Context) -> Response {
+  ctx
+  |> context.error(404, "Page does not exist!")
 }
 
-pub fn route_not_found_route() -> Route{
-    Route("route_not_found" |> path.from_string, RouteMethod(NotFound, "", dict.new(), route_not_found))
+pub fn route_not_found_route() -> Route {
+  Route(
+    "route_not_found"
+    |> path.from_string,
+    RouteMethod(NotFound, "", dict.new(), route_not_found),
+  )
 }
 
 pub type Node {
-  Node(path: Path, methods: List(RouteMethod), is_handler: Bool, not_found: RouteHandler)
+  Node(
+    path: Path,
+    methods: List(RouteMethod),
+    is_handler: Bool,
+    not_found: RouteHandler,
+  )
 }
 
 pub fn prefix(router: Router, prefix: String) -> Router {
@@ -83,12 +92,8 @@ fn append(nodes: List(Node), router: Router) -> Router {
         //If the head is in the node tree, then leave the router unchanged
         use <- util.when(is_in_tree(router, head), router)
         //Append the current node to the router tree
-        let Router(tree: tree, ..) =
-          router
-        Router(
-          ..router,
-          tree: [head, ..tree],
-        )
+        let Router(tree: tree, ..) = router
+        Router(..router, tree: [head, ..tree])
       }
       append(tail, router)
     }
@@ -100,7 +105,7 @@ fn add_route(router: Router, path: Path, method: RouteMethod) -> Router {
   let Router(routes: routes, ..) = router
   Router(
     ..router,
-    routes: dict.insert(into: routes, for: path, insert: Route(path, method))
+    routes: dict.insert(into: routes, for: path, insert: Route(path, method)),
   )
 }
 
@@ -177,10 +182,7 @@ fn compare_param(path: Path, node: Node) -> Bool {
 fn get_lcp(path: Path, nodes: List(Node)) -> Option(Node) {
   case nodes {
     [first, ..rest] -> {
-      use <- util.when(
-        on: path.compare(path, first.path),
-        then: Some(first),
-      )
+      use <- util.when(on: path.compare(path, first.path), then: Some(first))
       use <- util.when(on: compare_param(path, first), then: Some(first))
       get_lcp(path, rest)
     }
@@ -240,7 +242,12 @@ pub fn get_route(router: Router, path: String) -> Route {
   |> option.map(fn(node) {
     dict.get(router.routes, node.path)
     |> option.from_result
-    |> option.or(Some(Route(node.path, RouteMethod(NotFound, "", dict.new(), node.not_found))))
+    |> option.or(
+      Some(Route(
+        node.path,
+        RouteMethod(NotFound, "", dict.new(), node.not_found),
+      )),
+    )
   })
   |> option.flatten
   |> add_params(path)

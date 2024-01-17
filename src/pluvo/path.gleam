@@ -64,17 +64,17 @@ pub fn is_parameter(path: Path) -> Bool {
   }
 }
 
-pub fn has_parameter(path: Path, param: String) -> Bool{
-    case
-      path
-      |> last
-    {
-        Some(Parameter(pname)) -> {
-            use <- util.when(pname == param, True)
-            False
-        }
-        _ -> False
+pub fn has_parameter(path: Path, param: String) -> Bool {
+  case
+    path
+    |> last
+  {
+    Some(Parameter(pname)) -> {
+      use <- util.when(pname == param, True)
+      False
     }
+    _ -> False
+  }
 }
 
 pub fn is_parent(path: Path, other: Path) -> Bool {

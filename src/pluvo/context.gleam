@@ -29,13 +29,17 @@ fn default_response() {
 }
 
 pub fn new(request: Request(Connection)) {
-  Context(request, default_response(),
-  request.path |> path.from_string,
-  dict.new())
+  Context(
+    request,
+    default_response(),
+    request.path
+    |> path.from_string,
+    dict.new(),
+  )
 }
 
-pub fn set_path(ctx: Context, path: Path) -> Context{
-    Context(..ctx, path: path)
+pub fn set_path(ctx: Context, path: Path) -> Context {
+  Context(..ctx, path: path)
 }
 
 pub fn set_status(ctx: Context, status: Int) -> Context {
@@ -53,9 +57,9 @@ pub fn text(ctx: Context, text: String) -> Response(ResponseData) {
 pub fn error(ctx: Context, code: Int, message: String) -> Response(ResponseData) {
   let body = mist.Bytes(bytes_builder.from_string(message))
 
-  let ctx = 
-  ctx 
-  |> set_status(code)
+  let ctx =
+    ctx
+    |> set_status(code)
 
   ctx.resp
   |> response.set_body(body)
@@ -89,12 +93,22 @@ pub fn get_param(ctx: Context, key: String) -> Option(String) {
 
 pub fn add_param(ctx: Context, key: String, value: String) -> Context {
   let Context(request: req, resp: resp, params: params, ..) = ctx
-  Context(..ctx, request: req, resp: resp, params: dict.insert(params, key, value))
+  Context(
+    ..ctx,
+    request: req,
+    resp: resp,
+    params: dict.insert(params, key, value),
+  )
 }
 
 pub fn add_params(ctx: Context, params: Dict(String, String)) -> Context {
   let Context(request: req, resp: resp, params: ctxparams, ..) = ctx
-  Context(..ctx, request: req, resp: resp, params: dict.merge(ctxparams, params))
+  Context(
+    ..ctx,
+    request: req,
+    resp: resp,
+    params: dict.merge(ctxparams, params),
+  )
 }
 
 pub fn new_cookie(ctx: Context) -> Cookie {

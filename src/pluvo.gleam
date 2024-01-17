@@ -38,9 +38,9 @@ pub fn start(pluvo: Pluvo, port: Int) {
     fn(req: Request(Connection)) -> Response(ResponseData) {
       let ctx = context.new(req)
 
-      let route = 
-      router.get_route(pluvo.router, req.path) 
-      |> router.apply(pluvo.router.middleware)
+      let route =
+        router.get_route(pluvo.router, req.path)
+        |> router.apply(pluvo.router.middleware)
 
       ctx
       |> context.add_params(route.method.params)
