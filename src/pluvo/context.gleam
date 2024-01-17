@@ -116,6 +116,24 @@ pub fn get_header(ctx: Context, name: String) -> Option(String) {
   |> option.from_result
 }
 
+pub fn get_query_param(ctx: Context, name: String) -> Option(String){
+    use query <- option.then(
+        ctx.request 
+        |> request.get_query
+        |> option.from_result
+    )
+    query
+    |> list.find(fn(query){
+        let #(qname, _) = query 
+        qname == name
+    })
+    |> result.map(fn(query){
+        let #(_, qval) = query
+        qval
+    })
+    |> option.from_result
+}
+
 ///Apply a callback onto a result object if it exists, returning data to send back to the client
 ///This allows route handlers to simplify the calls of various get functions such as get_parameter
 ///and replace the case expression with a use statement to reduce code.
