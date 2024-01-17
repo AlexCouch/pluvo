@@ -11,6 +11,10 @@ import pluvo/context.{type Context}
 import gleam/io
 
 pub fn my_middleware(route: Route, ctx: Context) -> Response {
+  ctx 
+  |> context.get_header("Accept-Language")
+  |> io.debug
+
   ctx
   |> route.method.handler
 }

@@ -82,34 +82,38 @@ pub fn add_params(ctx: Context, params: Dict(String, String)) -> Context {
   Context(req, resp, dict.merge(ctxparams, params))
 }
 
-
-pub fn new_cookie(ctx: Context) -> Cookie{
-    http_cookie.defaults(ctx.request.scheme)
-    |> Cookie("", "")
+pub fn new_cookie(ctx: Context) -> Cookie {
+  http_cookie.defaults(ctx.request.scheme)
+  |> Cookie("", "")
 }
 
-
-pub fn set_cookie(ctx: Context, cookie: Cookie) -> Context{
-    let resp = ctx.resp
+pub fn set_cookie(ctx: Context, cookie: Cookie) -> Context {
+  let resp =
+    ctx.resp
     |> response.set_cookie(cookie.name, cookie.value, cookie.attributes)
 
-    Context(..ctx, resp: resp)
+  Context(..ctx, resp: resp)
 }
 
 pub fn get_cookie(ctx: Context, name: String) -> Option(String) {
   ctx.request
   |> request.get_cookies
   |> list.find(fn(cookie) { cookie.0 == name })
-  |> result.map(fn(cookie){
-      cookie.1
-  })
+  |> result.map(fn(cookie) { cookie.1 })
   |> option.from_result
 }
 
-pub fn set_header(ctx: Context, name: String, value: String) -> Context{
-    let resp = ctx.resp
+pub fn set_header(ctx: Context, name: String, value: String) -> Context {
+  let resp =
+    ctx.resp
     |> response.set_header(name, value)
-    Context(..ctx, resp: resp)
+  Context(..ctx, resp: resp)
+}
+
+pub fn get_header(ctx: Context, name: String) -> Option(String) {
+  ctx.request
+  |> request.get_header(name)
+  |> option.from_result
 }
 
 ///Apply a callback onto a result object if it exists, returning data to send back to the client
