@@ -29,11 +29,16 @@ pub fn v1(pluv: Pluvo) -> Pluvo {
     |> router.with_prefix(api, "user")
     |> router.get("/:id", user.handler)
 
+  let cors_admin =
+    cors.Config(allowed_headers: ["Access-Authentication-Test-Route"], allowed_origins: [])
+    |> cors.with_config
+
   let admin =
     pluv
     |> pluvo.router
     |> router.with_prefix(api, "admin")
     |> router.get("/home", admin_home.handler)
+    |> router.enable(cors_admin)
 
   pluv
   |> pluvo.add_router(api)
@@ -45,9 +50,16 @@ pub fn main() {
   let cors = cors.new()
   let static = static.new("/static")
 
-  pluvo.new()
-  |> pluvo.enable(cors)
+  let pluv = pluvo.new()
   |> pluvo.enable(static)
+
+  let root = 
+    pluv
+    |> pluvo.router
+    |> router.enable(cors)
+    |> router.post("/", index.handler)
+  pluv
   |> v1
+  |> pluvo.add_router(root)
   |> pluvo.start(3000)
 }

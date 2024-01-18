@@ -1,11 +1,10 @@
 import gleam/erlang/process
+import gleam/io
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
-import gleam/bytes_builder
 import mist.{type Connection, type ResponseData}
 import pluvo/router.{type Router, Router}
 import gleam/dict
-import gleam/option.{None, Some}
 import pluvo/context
 import pluvo/middleware.{type Middleware}
 
@@ -36,6 +35,7 @@ pub fn start(pluvo: Pluvo, port: Int) {
 
   let assert Ok(_) =
     fn(req: Request(Connection)) -> Response(ResponseData) {
+      req |> io.debug
       let ctx = context.new(req)
 
       let route =

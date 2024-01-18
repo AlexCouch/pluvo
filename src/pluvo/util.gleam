@@ -16,8 +16,8 @@ pub fn when(on condition: Bool, then default: a, orelse fun: fn() -> a) -> a {
 
 pub fn when_some(
   with option: Option(a),
-  then default: b,
-  orelse fun: fn(a) -> b,
+  then fun: fn(a) -> b,
+  orelse default: b,
 ) -> b {
   case option {
     Some(data) -> fun(data)
