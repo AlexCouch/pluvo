@@ -35,7 +35,8 @@ pub fn start(pluvo: Pluvo, port: Int) {
 
   let assert Ok(_) =
     fn(req: Request(Connection)) -> Response(ResponseData) {
-      req |> io.debug
+      req
+      |> io.debug
       let ctx = context.new(req)
 
       let route =

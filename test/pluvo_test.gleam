@@ -30,7 +30,10 @@ pub fn v1(pluv: Pluvo) -> Pluvo {
     |> router.get("/:id", user.handler)
 
   let cors_admin =
-    cors.Config(allowed_headers: ["Access-Authentication-Test-Route"], allowed_origins: [])
+    cors.Config(
+      allowed_headers: ["Access-Authentication-Test-Route"],
+      allowed_origins: [],
+    )
     |> cors.with_config
 
   let admin =
@@ -50,10 +53,11 @@ pub fn main() {
   let cors = cors.new()
   let static = static.new("/static")
 
-  let pluv = pluvo.new()
-  |> pluvo.enable(static)
+  let pluv =
+    pluvo.new()
+    |> pluvo.enable(static)
 
-  let root = 
+  let root =
     pluv
     |> pluvo.router
     |> router.enable(cors)

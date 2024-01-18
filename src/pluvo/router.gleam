@@ -20,7 +20,7 @@ import pluvo/context.{type Context}
 import pluvo/response.{type Response}
 import pluvo/path.{type Path, Parameter, Segment}
 import pluvo/route.{
-  type Route, type RouteHandler, type RouteMethod, Get, Post, NotFound, Route,
+  type Route, type RouteHandler, type RouteMethod, Get, NotFound, Post, Route,
   RouteMethod,
 }
 import pluvo/util
@@ -174,13 +174,13 @@ pub fn get(router: Router, path: String, handler: RouteHandler) -> Router {
   add(router, path, method)
 }
 
-pub fn post(router: Router, path: String, handler: RouteHandler) -> Router{
-    let path = 
-      router.prefix
-      |> append_prefix(path)
+pub fn post(router: Router, path: String, handler: RouteHandler) -> Router {
+  let path =
+    router.prefix
+    |> append_prefix(path)
 
-    let method = RouteMethod(Post, path, dict.new(), handler)
-    add(router, path, method)
+  let method = RouteMethod(Post, path, dict.new(), handler)
+  add(router, path, method)
 }
 
 fn compare_param(path: Path, node: Node) -> Bool {
