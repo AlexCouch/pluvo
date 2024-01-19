@@ -1,6 +1,6 @@
 import gleam/string
-import gleam/list
 import gleam/io
+import gleam/list
 import pluvo/route
 import pluvo/context.{type Context}
 import pluvo/response.{type Response}
@@ -52,8 +52,8 @@ fn handle_preflight(
   allowed_origins: String,
   ctx: Context,
 ) -> Response {
+  io.println("Preflight handling...")
   //TODO: Put "Origin" into global constant
-  io.println("Handling preflight")
   use origin <- util.when_some(
     with: ctx
     |> context.get_header("origin"),

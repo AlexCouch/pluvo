@@ -103,9 +103,11 @@ fn append(nodes: List(Node), router: Router) -> Router {
 
 fn add_route(router: Router, path: Path, method: RouteMethod) -> Router {
   let Router(routes: routes, ..) = router
+  let route = Route(path, method)
+  |> apply(router.middleware)
   Router(
     ..router,
-    routes: dict.insert(into: routes, for: path, insert: Route(path, method)),
+    routes: dict.insert(into: routes, for: path, insert: route),
   )
 }
 
@@ -264,16 +266,17 @@ pub fn get_route(router: Router, path: String) -> Route {
 }
 
 pub fn join(router: Router, other: Router) -> Router {
-  let Router(_, nodes, routes, mw) = router
-  let Router(_, other_nodes, other_routes, other_mw) = other
+  let Router(tree: nodes, routes: routes, ..) = router
+  let Router(tree: other_nodes, routes: other_routes, ..) = other
   Router(
-    "",
-    list.append(nodes, other_nodes),
-    dict.merge(routes, other_routes),
-    list.append(mw, other_mw),
+    ..router,
+    prefix: "",
+    tree: list.append(nodes, other_nodes),
+    routes: dict.merge(routes, other_routes),
   )
 }
 
 pub fn enable(router: Router, middleware: Middleware) -> Router {
   Router(..router, middleware: [middleware, ..router.middleware])
+  |> apply_middleware
 }

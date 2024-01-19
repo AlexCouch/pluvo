@@ -31,7 +31,7 @@ pub fn v1(pluv: Pluvo) -> Pluvo {
 
   let cors_admin =
     cors.Config(
-      allowed_headers: ["Access-Authentication-Test-Route"],
+      allowed_headers: ["access-authentication-test-route", "content-type"],
       allowed_origins: [],
     )
     |> cors.with_config
@@ -41,6 +41,7 @@ pub fn v1(pluv: Pluvo) -> Pluvo {
     |> pluvo.router
     |> router.with_prefix(api, "admin")
     |> router.get("/home", admin_home.handler)
+    |> router.post("/home", admin_home.handler)
     |> router.enable(cors_admin)
 
   pluv

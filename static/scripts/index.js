@@ -1,9 +1,10 @@
 async function cors_test(){
-    const response = await fetch("http://alex.couch.co:3000", {
+    const response = await fetch("http://alex.couch.co:3000/api/v1/user/5", {
         method: "POST",
         mode: "cors",
         headers: {
             "Content-Type": "text/json",
+            "Access-Authentication-Test-Route": "test",
         },
         body: JSON.stringify({ "name": "alex" })
     });
