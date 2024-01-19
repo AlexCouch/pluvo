@@ -49,16 +49,16 @@ pub fn from_string(path: String) -> Path {
   |> new
 }
 
-pub fn to_string(path: Path) -> String{
-    path.parts
-    |> list.map(fn(part){
-        case part{
-            Segment(seg) -> string_builder.from_string(seg) 
-            Parameter(param) -> string_builder.from_string(param)
-        }
-    })
-    |> string_builder.join("/")
-    |> string_builder.to_string
+pub fn to_string(path: Path) -> String {
+  path.parts
+  |> list.map(fn(part) {
+    case part {
+      Segment(seg) -> string_builder.from_string(seg)
+      Parameter(param) -> string_builder.from_string(param)
+    }
+  })
+  |> string_builder.join("/")
+  |> string_builder.to_string
 }
 
 pub fn last(path: Path) -> Option(PathPart) {

@@ -103,12 +103,10 @@ fn append(nodes: List(Node), router: Router) -> Router {
 
 fn add_route(router: Router, path: Path, method: RouteMethod) -> Router {
   let Router(routes: routes, ..) = router
-  let route = Route(path, method)
-  |> apply(router.middleware)
-  Router(
-    ..router,
-    routes: dict.insert(into: routes, for: path, insert: route),
-  )
+  let route =
+    Route(path, method)
+    |> apply(router.middleware)
+  Router(..router, routes: dict.insert(into: routes, for: path, insert: route))
 }
 
 pub fn apply(route: Route, middleware: List(Middleware)) -> Route {
