@@ -1,6 +1,7 @@
 import gleam/option.{type Option, None, Some}
 import gleam/string
 import gleam/list
+import gleam/string_builder
 import pluvo/util
 
 pub type Path {
@@ -46,6 +47,18 @@ pub fn from_string(path: String) -> Path {
   |> string.split("/")
   |> create_parts
   |> new
+}
+
+pub fn to_string(path: Path) -> String{
+    path.parts
+    |> list.map(fn(part){
+        case part{
+            Segment(seg) -> string_builder.from_string(seg) 
+            Parameter(param) -> string_builder.from_string(param)
+        }
+    })
+    |> string_builder.join("/")
+    |> string_builder.to_string
 }
 
 pub fn last(path: Path) -> Option(PathPart) {

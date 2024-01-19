@@ -6,12 +6,9 @@ import routes/html_test
 import routes/user
 import routes/auth
 import routes/admin_home
-import pluvo/route.{type Route}
-import pluvo/response.{type Response}
-import pluvo/context.{type Context}
 import pluvo/middleware/cors
 import pluvo/middleware/static
-import gleam/io
+import pluvo/middleware/logger
 
 pub fn v1(pluv: Pluvo) -> Pluvo {
   let api =
@@ -56,6 +53,7 @@ pub fn main() {
 
   let pluv =
     pluvo.new()
+    |> pluvo.enable(logger.new())
     |> pluvo.enable(static)
 
   let root =
