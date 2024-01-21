@@ -1,4 +1,8 @@
 import gleam/http
+import gleam/string
+import gleam/int
+import gleam/dynamic
+import gleam/json
 import gleam/http/cookie as http_cookie
 import gleam/result
 import gleam/list
@@ -181,16 +185,93 @@ pub fn then(result: Option(a), fun: fn(a) -> Response) -> Response {
 }
 
 pub type Decoder(a) =
-  fn(BitArray) -> Result(a, DecodeError)
+  fn(dynamic.Dynamic) -> Result(a, List(dynamic.DecodeError))
+
+pub type JsonDecoder(a) =
+  fn(dynamic.Dynamic) -> Result(a, List(json.DecodeError))
 
 pub type DecodeError {
   DecodeError(message: String)
+}
+
+pub fn convert_json_decode_error(err: json.DecodeError) -> DecodeError {
+  let message = case err {
+    json.UnexpectedEndOfInput -> "Unexpected end of input"
+    json.UnexpectedByte(byte, pos) ->
+      "Unexpected byte "
+      <> byte
+      <> " @ "
+      <> int.to_string(pos)
+    json.UnexpectedSequence(byte, pos) ->
+      "Unexpected sequence "
+      <> byte
+      <> " @ "
+      <> int.to_string(pos)
+    json.UnexpectedFormat(errors) ->
+      "Unexpected format: "
+      <> string.join(
+        errors
+        |> list.map(fn(err) {
+          "Expected "
+          <> err.expected
+          <> " but found "
+          <> err.found
+          <> " @ "
+          <> string.join(err.path, ",")
+        }),
+        ",",
+      )
+  }
+  DecodeError(message)
+}
+
+pub fn convert_decode_error(err: dynamic.DecodeError) -> DecodeError {
+  let message =
+    "Expected "
+    <> err.expected
+    <> " but found "
+    <> err.found
+    <> " @ "
+    <> string.join(err.path, ",")
+  DecodeError(message)
+}
+
+pub fn convert_decode_error_list(
+  errors: List(dynamic.DecodeError),
+) -> List(DecodeError) {
+  errors
+  |> list.map(fn(err) { convert_decode_error(err) })
 }
 
 pub fn bind(ctx: Context, decoder: Decoder(a)) -> Result(a, DecodeError) {
   ctx.request
   |> request.load_body
   |> result.map_error(fn(err) { DecodeError(err.message) })
-  |> result.map(fn(req) { decoder(req.body) })
+  |> result.map(fn(req) {
+    decoder(
+      req.body
+      |> dynamic.from,
+    )
+    |> result.map_error(convert_decode_error_list)
+  })
+  |> result.map(fn(res) {
+    result.map_error(res, fn(errs) {
+      errs
+      |> list.map(fn(err) { err.message })
+      |> string.join("\n")
+      |> DecodeError
+    })
+  })
+  |> result.flatten
+}
+
+pub fn bind_json(ctx: Context, decoder: Decoder(a)) -> Result(a, DecodeError) {
+  ctx.request
+  |> request.load_body
+  |> result.map_error(fn(err) { DecodeError(err.message) })
+  |> result.map(fn(req) {
+    json.decode_bits(req.body, decoder)
+    |> result.map_error(fn(err) { convert_json_decode_error(err) })
+  })
   |> result.flatten
 }
