@@ -157,9 +157,7 @@ fn append_prefix(prefix, path: String) -> String {
     )
     prefix
   }
-  let new_path = prefix <> "/" <> path
-  new_path
-  |> io.debug
+  prefix <> "/" <> path
 }
 
 ///When the path starts with "/", then drop it
