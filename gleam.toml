@@ -17,6 +17,7 @@ gleam_erlang = "~> 0.24"
 gleam_otp = "~> 0.9"
 simplifile = "~> 1.2"
 juno = "~> 1.2"
+gleam_json = "~> 0.7"
 
 [dev-dependencies]
 gleeunit = "~> 1.0"

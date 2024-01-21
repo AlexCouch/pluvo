@@ -9,6 +9,7 @@ import routes/admin_home
 import pluvo/middleware/cors
 import pluvo/middleware/static
 import pluvo/middleware/logger
+import routes/create_user
 
 pub fn v1(pluv: Pluvo) -> Pluvo {
   let api =
@@ -25,6 +26,7 @@ pub fn v1(pluv: Pluvo) -> Pluvo {
     |> pluvo.router
     |> router.with_prefix(api, "user")
     |> router.get("/:id", user.handler)
+    |> router.post("/create", create_user.handler)
 
   let cors_admin =
     cors.Config(

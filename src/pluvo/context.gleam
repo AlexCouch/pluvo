@@ -14,6 +14,7 @@ import pluvo/request.{type Request}
 import pluvo/response.{type Response}
 import gleam/http/response as http_resp
 import mist
+import gleam/bit_array
 
 pub type Context {
   Context(
@@ -177,4 +178,19 @@ pub fn then(result: Option(a), fun: fn(a) -> Response) -> Response {
       |> http_resp.set_body(body)
     }
   }
+}
+
+pub type Decoder(a) =
+  fn(BitArray) -> Result(a, DecodeError)
+
+pub type DecodeError {
+  DecodeError(message: String)
+}
+
+pub fn bind(ctx: Context, decoder: Decoder(a)) -> Result(a, DecodeError) {
+  ctx.request
+  |> request.load_body
+  |> result.map_error(fn(err) { DecodeError(err.message) })
+  |> result.map(fn(req) { decoder(req.body) })
+  |> result.flatten
 }
