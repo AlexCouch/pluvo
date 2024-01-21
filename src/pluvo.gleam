@@ -1,4 +1,5 @@
 import gleam/erlang/process
+import gleam/list
 import gleam/io
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
@@ -25,9 +26,12 @@ pub fn add_router(pluvo: Pluvo, router: Router) -> Pluvo {
 }
 
 pub fn enable(pluvo: Pluvo, middleware: Middleware) -> Pluvo {
-  pluvo.router
-  |> router.enable(middleware)
-  |> Pluvo
+  let new =
+    pluvo.router
+    |> router.enable(middleware)
+    |> Pluvo
+
+  new
 }
 
 pub fn start(pluvo: Pluvo, port: Int) {
@@ -37,9 +41,7 @@ pub fn start(pluvo: Pluvo, port: Int) {
     fn(req: Request(Connection)) -> Response(ResponseData) {
       let ctx = context.new(req)
 
-      let route =
-        router.get_route(pluvo.router, req.path)
-        |> router.apply(pluvo.router.middleware)
+      let route = router.get_route(pluvo.router, req.path)
 
       ctx
       |> context.add_params(route.method.params)

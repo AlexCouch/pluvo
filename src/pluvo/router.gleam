@@ -258,17 +258,20 @@ pub fn get_route(router: Router, path: String) -> Route {
   })
   |> option.flatten
   |> add_params(path)
-  |> option.unwrap(route_not_found_route())
+  |> option.unwrap(
+    route_not_found_route()
+    |> apply(router.middleware),
+  )
 }
 
 pub fn join(router: Router, other: Router) -> Router {
-  let Router(tree: nodes, routes: routes, ..) = router
+  let Router(tree: nodes, routes: routes, middleware: middleware, ..) = router
   let Router(tree: other_nodes, routes: other_routes, ..) = other
   Router(
-    ..router,
     prefix: "",
     tree: list.append(nodes, other_nodes),
     routes: dict.merge(routes, other_routes),
+    middleware: middleware,
   )
 }
 

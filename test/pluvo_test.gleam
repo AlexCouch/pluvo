@@ -1,4 +1,5 @@
 import pluvo.{type Pluvo}
+import gleam/io
 import pluvo/router
 import routes/index
 import routes/rand
@@ -21,6 +22,13 @@ pub fn v1(pluv: Pluvo) -> Pluvo {
     |> router.get("/html_test", html_test.handler)
     |> router.get("/auth", auth.handler)
 
+  let api_cors =
+    cors.Config(
+      allowed_headers: ["access-authentication-test-route", "content-type"],
+      allowed_origins: [],
+    )
+    |> cors.with_config
+
   let user =
     pluv
     |> pluvo.router
@@ -28,20 +36,12 @@ pub fn v1(pluv: Pluvo) -> Pluvo {
     |> router.get("/:id", user.handler)
     |> router.post("/create", create_user.handler)
 
-  let cors_admin =
-    cors.Config(
-      allowed_headers: ["access-authentication-test-route", "content-type"],
-      allowed_origins: [],
-    )
-    |> cors.with_config
-
   let admin =
     pluv
     |> pluvo.router
     |> router.with_prefix(api, "admin")
     |> router.get("/home", admin_home.handler)
     |> router.post("/home", admin_home.handler)
-    |> router.enable(cors_admin)
 
   pluv
   |> pluvo.add_router(api)
