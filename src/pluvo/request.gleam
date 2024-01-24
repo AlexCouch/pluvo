@@ -50,3 +50,7 @@ pub fn get_body(req: Request) -> Option(String) {
     Error(_) -> None
   }
 }
+
+pub fn get_form_data(req: Request) -> Option(String) {
+  todo
+}

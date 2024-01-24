@@ -1,8 +1,14 @@
 import gleam/http
+import gleam/io
 import gleam/string
 import gleam/int
 import gleam/dynamic
 import gleam/json
+import gleam/bit_array
+import gleam/http.{
+  type MultipartBody, type MultipartHeaders, MoreRequiredForBody,
+  MoreRequiredForHeaders, MultipartBody, MultipartHeaders,
+} as http_form
 import gleam/http/cookie as http_cookie
 import gleam/result
 import gleam/list
@@ -18,7 +24,6 @@ import pluvo/request.{type Request}
 import pluvo/response.{type Response}
 import gleam/http/response as http_resp
 import mist
-import gleam/bit_array
 
 pub type Context {
   Context(
@@ -274,4 +279,103 @@ pub fn bind_json(ctx: Context, decoder: Decoder(a)) -> Result(a, DecodeError) {
     |> result.map_error(fn(err) { convert_json_decode_error(err) })
   })
   |> result.flatten
+}
+
+fn get_boundary(content_type: Option(String)) -> Option(String) {
+  use content_type <- option.then(content_type)
+  case content_type {
+    "multipart/form-data; boundary=" <> boundary -> Some(boundary)
+    _ -> None
+  }
+}
+
+pub fn form_data(ctx: Context, name: String) -> Option(String) {
+  use boundary <- option.then(
+    ctx.request
+    |> http_req.get_header("content-type")
+    |> option.from_result
+    |> get_boundary,
+  )
+  use length <- option.then(
+    ctx.request
+    |> http_req.get_header("content-length")
+    |> option.from_result
+    |> option.map(fn(length) {
+      int.parse(length)
+      |> result.unwrap(0)
+    }),
+  )
+  use data <- option.then(
+    ctx.request
+    |> mist.read_body(length)
+    |> option.from_result
+    |> option.map(fn(req) { req.body }),
+  )
+  use headers <- option.then(
+    http.parse_multipart_headers(data, boundary)
+    |> option.from_result,
+  )
+  use headers <- option.then(get_multipart_headers(data, boundary, headers))
+  headers
+  //TODO: Convert disposition to form data element
+  //TODO: Try to get more form data from headers
+  |> list.find(fn(header) { header.0 == name })
+  |> option.from_result
+  |> option.map(fn(header) { header.1 })
+  |> io.debug
+}
+
+fn get_form_name(headers: List(#(String, String))) -> Option(String) {
+  todo
+}
+
+fn get_multipart_headers(
+  data: BitArray,
+  boundary: String,
+  headers: MultipartHeaders,
+  form_data: List(#(String, String)),
+) -> Option(List(#(String, String))) {
+  case headers {
+    MultipartHeaders(headers, remaining) -> {
+      use #(value, body) <- option.then(get_multipart_body(boundary, remaining))
+      Some(#(
+        headers
+        |> get_form_name
+        |> option.unwrap(""),
+        value,
+      ))
+    }
+    MoreRequiredForHeaders(cont) -> {
+      use headers <- option.then(
+        cont(data)
+        |> option.from_result,
+      )
+      get_multipart_headers(data, boundary, headers, form_data)
+    }
+  }
+}
+
+fn get_multipart_body(
+  boundary: String,
+  data: BitArray,
+  headers: List(#(String, String)),
+  form_data: List(#(String, String)),
+) -> Option(#(String, MultipartBody)) {
+  use body <- option.then(
+    http.parse_multipart_body(data, boundary)
+    |> option.from_result,
+  )
+  case body {
+    MultipartBody(chunk, done, remaining) -> {
+      let ret_body =
+        #(
+          bit_array.to_string(chunk)
+          |> result.unwrap(""),
+          body,
+        )
+        |> Some
+      use <- util.when(done, ret_body)
+    }
+    MoreRequiredForBody(chunk, cont) -> todo
+  }
 }

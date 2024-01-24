@@ -11,16 +11,18 @@ import pluvo/middleware/cors
 import pluvo/middleware/static
 import pluvo/middleware/logger
 import routes/create_user
+import routes/form
 
 pub fn v1(pluv: Pluvo) -> Pluvo {
   let api =
     pluv
     |> pluvo.router
-    |> router.prefix("api/v1/")
+    |> router.prefix("api/v1")
     |> router.get("/", index.handler)
     |> router.get("/rand", rand.handler)
     |> router.get("/html_test", html_test.handler)
     |> router.get("/auth", auth.handler)
+    |> router.get("/form", form.handler)
 
   let api_cors =
     cors.Config(
@@ -35,6 +37,7 @@ pub fn v1(pluv: Pluvo) -> Pluvo {
     |> router.with_prefix(api, "user")
     |> router.get("/:id", user.handler)
     |> router.post("/create", create_user.handler)
+    |> router.enable(api_cors)
 
   let admin =
     pluv
